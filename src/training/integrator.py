@@ -29,11 +29,20 @@ def prase_init(init=None, motion_mode=False, device='cuda:0'):
 class IMUIntegrator:
     def __init__(self, init_state=None, prop_cov=True, gravity=torch.tensor([0.0, 0.0, 9.81]), device='cuda:0'):
         self.device = device
-        init_pos, init_rot, init_vel, _ = prase_init(init_state, motion_mode=False)
-        self.integrator = pp.module.IMUPreintegrator(init_pos, init_rot, init_vel,
-                                                     prop_cov=prop_cov, reset=True, gravity=gravity).to(device)
+        init_pos, init_rot, init_vel, _ = prase_init(init_state, motion_mode=False, device=device)
+        try:
+            # pypose builds where `gravity` is a 3-vector
+            self.integrator = pp.module.IMUPreintegrator(init_pos, init_rot, init_vel,
+                                                         prop_cov=prop_cov, reset=True, gravity=gravity).to(device)
+        except (ValueError, TypeError):
+            # pypose>=0.6.8 expects a scalar (vertical component); [0,0,g] is built internally
+            g_scalar = float(gravity.reshape(-1)[-1]) if torch.is_tensor(gravity) else float(gravity)
+            self.integrator = pp.module.IMUPreintegrator(init_pos, init_rot, init_vel,
+                                                         prop_cov=prop_cov, reset=True, gravity=g_scalar).to(device)
     
-    def integrate(self, init, dts, accels, gyros, cov_accels=None, cov_gyros=None, motion_mode=False, device='cuda:0'):
+    def integrate(self, init, dts, accels, gyros, cov_accels=None, cov_gyros=None, motion_mode=False, device=None):
+        if device is None:
+            device = self.device
         init_pos, init_rot, init_vel, init_cov = prase_init(init, motion_mode, device)
 
         if motion_mode:

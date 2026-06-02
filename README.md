@@ -35,6 +35,10 @@ KISS-IMU denoises raw IMU streams against a self-generated LiDAR-odometry pseudo
 
 ## 🚀 Getting Started
 
+> 🧪 **Just want to see it run?** See [`RUNNING.md`](RUNNING.md) for a
+> self-contained **synthetic-data demo** that needs no external dataset and no
+> GPU, plus environment/CPU notes and the `src/data/` data contract.
+
 ### 🐳 Docker (recommended)
 
 The image `sparolab/kiss-imu:v1.0` ships with all runtime dependencies (CUDA, PyTorch, pypose, kiss-icp, small_gicp, pygicp, scikit-learn).

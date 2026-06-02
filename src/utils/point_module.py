@@ -1,5 +1,8 @@
 import numpy as np
-import open3d as o3d
+try:
+    import open3d as o3d  # optional: only used by down_sampling()
+except Exception:
+    o3d = None
 
 
 class PointModule:

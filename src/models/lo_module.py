@@ -1,10 +1,16 @@
 import torch
 import torch.nn as nn
 
-import cv2
+try:
+    import cv2
+except Exception:
+    cv2 = None
 import numpy as np
 import pypose as pp
-import open3d as o3d
+try:
+    import open3d as o3d
+except Exception:
+    o3d = None
 
 from scipy.spatial.transform import Rotation
 from concurrent.futures import ThreadPoolExecutor
@@ -14,21 +20,34 @@ from utils.point_module import *
 ## ========================================
 
 ## ======= Fast GICP =====================
-import pygicp
+try:
+    import pygicp
+except Exception:
+    pygicp = None
 ## =======================================
 
 ## ======= KISS GICP =====================
-from kiss_icp.config import KISSConfig
-from kiss_icp.deskew import get_motion_compensator
-from kiss_icp.mapping import get_voxel_hash_map
-from kiss_icp.preprocess import get_preprocessor
-from kiss_icp.registration import get_registration
-from kiss_icp.threshold import get_threshold_estimator
-from kiss_icp.voxelization import voxel_down_sample
+# Optional LiDAR-odometry backends. Guarded so the package imports even when the
+# heavy C++ deps are absent; they are only needed when that backend is selected.
+try:
+    from kiss_icp.config import KISSConfig
+    from kiss_icp.deskew import get_motion_compensator
+    from kiss_icp.mapping import get_voxel_hash_map
+    from kiss_icp.preprocess import get_preprocessor
+    from kiss_icp.registration import get_registration
+    from kiss_icp.threshold import get_threshold_estimator
+    from kiss_icp.voxelization import voxel_down_sample
+except Exception:
+    KISSConfig = get_motion_compensator = get_voxel_hash_map = None
+    get_preprocessor = get_registration = get_threshold_estimator = None
+    voxel_down_sample = None
 ## =======================================
 
 ## ======= Small GICP =====================
-import small_gicp
+try:
+    import small_gicp
+except Exception:
+    small_gicp = None
 ## =======================================
 
 

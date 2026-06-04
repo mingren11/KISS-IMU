@@ -23,4 +23,5 @@ def xyz_from_pointcloud2(msg, field_names=('x', 'y', 'z')) -> np.ndarray:
     from sensor_msgs_py import point_cloud2
     structured = point_cloud2.read_points(msg, field_names=field_names, skip_nans=True)
     xyz = np.stack([structured['x'], structured['y'], structured['z']], axis=-1).astype(np.float64)
-    return xyz
+    mask = np.isfinite(xyz).all(axis=1)
+    return xyz[mask]

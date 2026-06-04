@@ -42,4 +42,4 @@ ros2 bag play your_dataset.db3 --remap /your_imu:=/imu /your_points:=/points
 Both subscriptions use `qos_profile_sensor_data` (BestEffort). If your IMU/LiDAR publisher uses RELIABLE QoS, ROS2 will silently fail to match and the node receives nothing — align the publisher QoS or adjust the subscription QoS accordingly.
 
 ## Scope (Phase 1)
-Front-end odometry only. Deferred to later phases: learned IMU correction (LearnedCorrector), sliding-window PVGO, input voxel downsampling, high-rate IMU TF, and a NaN/finite guard on the optimized anchor pose (a divergent solve currently propagates into subsequent steps).
+Front-end odometry only. Deferred to later phases: learned IMU correction (LearnedCorrector), sliding-window PVGO, input voxel downsampling, high-rate IMU TF, and per-point LiDAR timestamps for kiss_icp motion compensation (currently `scan1_ts` is zero-filled, so kiss_icp deskew is effectively disabled — fine for small_gicp / non-spinning input). NaN/finite guard on the optimized anchor pose is implemented (divergent solves fall back to the IMU-integrated node).

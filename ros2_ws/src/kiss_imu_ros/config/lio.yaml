@@ -13,5 +13,5 @@
     # !! MUST set the IMU->LiDAR extrinsic from your real calibration; do NOT keep identity !!
     R_I_L: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]   # row-major 3x3
     T_I_L: [0.0, 0.0, 0.0]
-    voxel_size: 0.5
+    voxel_size: 0.5               # NOTE: declared for Phase 2; not yet wired into the pipeline
     publish_path: true

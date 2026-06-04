@@ -1,0 +1,17 @@
+/lio_node:
+  ros__parameters:
+    imu_topic: "/imu"
+    points_topic: "/points"
+    odom_topic: "odometry"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    lo_model: "kiss_icp"          # recommended on real robot
+    use_submap: false
+    device: "cuda:0"
+    lm_weight: [1.0, 0.1, 1.0, 0.1, 0.1]
+    gravity: [0.0, 0.0, 9.81]
+    # !! MUST set the IMU->LiDAR extrinsic from your real calibration; do NOT keep identity !!
+    R_I_L: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]   # row-major 3x3
+    T_I_L: [0.0, 0.0, 0.0]
+    voxel_size: 0.5               # NOTE: declared for Phase 2; not yet wired into the pipeline
+    publish_path: true

@@ -34,6 +34,20 @@ ros2 bag play your_dataset.db3 --remap /your_imu:=/imu /your_points:=/points
 # inspect /odometry, TF odom->base_link; in rviz2 add Odometry / Path / TF
 ```
 
+## Offline Livox (Mid-360) bag replay — no ROS needed
+A Livox Mid-360 typically publishes `livox_ros_driver2/msg/CustomMsg` (not PointCloud2),
+which the live node does not subscribe to. To validate the front-end on such a bag
+entirely offline (no ROS2, no Livox driver):
+```bash
+pip install rosbags
+python tools/replay_livox_bag.py --bag data/mid360_1 --lo-model small_gicp --device cpu --out results/livox_mid360_1
+```
+Notes:
+- The Mid-360 IMU reports acceleration in **g**; the tool scales by `9.80665` to m/s² by default (`--acc-scale 1.0` if your IMU is already m/s²).
+- Per-point `offset_time` is used for deskew (normalized to [0,1]).
+- These bags have no ground-truth poses, so validation is qualitative (inspect `trajectory.png`).
+- For real-time on-robot use of CustomMsg, a node-side adapter (vendored Livox msgs + `input_mode`) is a separate follow-up.
+
 ## Must-configure
 - `config/lio.yaml` `R_I_L` / `T_I_L` MUST be set from your real IMU->LiDAR calibration (defaults are identity).
 - On the real robot use `lo_model: kiss_icp`, `device: cuda:0`.

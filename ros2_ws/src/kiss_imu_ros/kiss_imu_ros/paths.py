@@ -3,6 +3,9 @@
 The algorithm code lives in <repo>/src and is imported with top-level package
 names, exactly as scripts/train.sh runs it (`cd src; python train.py`). We add
 that directory to sys.path instead of copying or modifying it.
+
+The default path assumes this file is loaded from the source tree; an installed
+wheel must set the KISS_IMU_SRC environment variable instead.
 """
 import os
 import sys

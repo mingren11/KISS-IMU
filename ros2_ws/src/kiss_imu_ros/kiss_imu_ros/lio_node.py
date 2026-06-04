@@ -71,7 +71,7 @@ class LioNode(Node):
         t0 = self._last_scan_t if self._last_scan_t is not None else (t - 0.1)
         ts, acc, gyro = self.buf.pop_window(t0, t)
         self._last_scan_t = t
-        scan = xyz_from_pointcloud2(msg)
+        scan, _ = xyz_from_pointcloud2(msg)
         result = self.estimator.step(scan, acc, gyro, ts)
         self._publish(result, msg.header.stamp)
 

@@ -4,7 +4,7 @@ Streaming LIO front-end built on KISS-IMU. Phase 1: raw IMU + ICP + 2-node PVGO,
 
 ## Dependencies
 - ROS2 (rclpy, sensor_msgs, nav_msgs, tf2_ros, sensor_msgs_py)
-- Python: torch, pypose, numpy, small_gicp (or kiss_icp on the real robot)
+- Python: torch, pypose, numpy, small_gicp (`pip install small_gicp`). For the real-robot path (`lo_model: kiss_icp`) also install kiss-icp separately: `pip install kiss-icp`.
 - The upstream algorithm code lives in `<repo>/src`, located via the `KISS_IMU_SRC` env var (default: a relative path from the package).
 
 ## Tests (no ROS / no sensor / no GPU needed)
@@ -14,6 +14,7 @@ KISS_IMU_SRC=/abs/path/to/KISS-IMU/src python -m pytest test/ -v
 ```
 The replay test additionally needs the synthetic dataset:
 ```bash
+# from the repo root (<repo>/), not from ros2_ws/...
 python tools/gen_synth_dataset.py --out data/synth/Synth01
 ```
 

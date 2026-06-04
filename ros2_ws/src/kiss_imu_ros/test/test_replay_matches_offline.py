@@ -36,3 +36,5 @@ def test_replay_synth_produces_finite_trajectory():
     poses = np.asarray(poses)
     assert poses.shape == (n, 7)
     assert np.all(np.isfinite(poses))
+    # estimator must actually move, not return the bootstrap anchor forever
+    assert not np.allclose(poses[0], poses[-1])

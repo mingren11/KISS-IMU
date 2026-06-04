@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 
-def build_window_sample(accels, gyros, imu_ts, scan0, scan1, scan1_ts=None, device='cpu'):
+def build_window_sample(accels, gyros, imu_ts, scan0, scan1, scan1_ts=None):
     """Build a batch-of-1 sample dict with exactly the keys IMUNet.forward and
     LOModule.forward read. dts[k] = ts[k]-ts[k-1], with dts[0] duplicated from dts[1]."""
     accels = np.asarray(accels, dtype=np.float64)

@@ -34,3 +34,21 @@ def test_raw_corrector_passthrough_structure():
     # raw = no correction: passthrough equals input
     assert torch.allclose(corr['accels_corr'][0].cpu().double(),
                           torch.from_numpy(accels))
+
+
+def test_build_window_sample_dts_invariant():
+    accels, gyros, imu_ts, scan0, scan1 = _fake_window()
+    s = build_window_sample(accels, gyros, imu_ts, scan0, scan1)
+    dts = s['imu_dts'][0].numpy()
+    expected = np.diff(imu_ts)
+    # dts[0] duplicates dts[1]; dts[k] = ts[k]-ts[k-1] for k>=1
+    assert np.allclose(dts[1:], expected, atol=1e-5)
+    assert np.isclose(dts[0], dts[1], atol=1e-7)
+
+
+def test_raw_corrector_passthrough_gyros_and_dts():
+    accels, gyros, imu_ts, scan0, scan1 = _fake_window()
+    s = build_window_sample(accels, gyros, imu_ts, scan0, scan1)
+    corr = RawCorrector().correct(s)
+    assert torch.allclose(corr['gyros_corr'][0].cpu().double(), torch.from_numpy(gyros))
+    assert len(corr['dts']) == 1 and corr['dts'][0].shape == (20,)

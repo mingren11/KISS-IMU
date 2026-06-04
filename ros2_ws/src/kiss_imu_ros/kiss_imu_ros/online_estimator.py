@@ -80,6 +80,15 @@ class OnlineEstimator:
 
         sample = build_window_sample(accels, gyros, imu_ts, self._prev_scan, scan_xyz)
         corr = self.corrector.correct(sample)
+        # move corrected IMU to the estimator device (IMUNet.forward did this; RawCorrector does not)
+        dev = self.device
+        corr['accels_corr'] = [a.to(dev) for a in corr['accels_corr']]
+        corr['gyros_corr'] = [g.to(dev) for g in corr['gyros_corr']]
+        corr['dts'] = [d.to(dev) for d in corr['dts']]
+        if corr['acc_cov'] is not None:
+            corr['acc_cov'] = [c.to(dev) for c in corr['acc_cov']]
+        if corr['gyr_cov'] is not None:
+            corr['gyr_cov'] = [c.to(dev) for c in corr['gyr_cov']]
 
         init_pos = self.anchor_pose[:3].to(self.device).float()
         init_rot = self.anchor_pose[3:].to(self.device).float()

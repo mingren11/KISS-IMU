@@ -15,5 +15,5 @@
     T_I_L: [0.0, 0.0, 0.0]
     voxel_size: 0.0               # node-level voxel downsample; 0 = OFF (recommended: backends voxelize internally; enabling double-downsamples)
     time_field: ""                # per-point time field for deskew; Velodyne: "time", Livox Mid-360: "timestamp". Empty = no deskew.
-    max_step_ms: 0.0              # warn if a step() exceeds this (ms); 0 = drop-only, no warning
+    max_step_ms: 0.0              # warn if a step() exceeds this (ms); 0 = disabled (drops still happen via the frame gate)
     publish_path: true

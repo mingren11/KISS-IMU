@@ -38,7 +38,7 @@ class LioNode(Node):
             odom_frame='odom', base_frame='base_link', lo_model='kiss_icp',
             use_submap=False, device='cuda:0', lm_weight=[1.0, 0.1, 1.0, 0.1, 0.1],
             gravity=[0.0, 0.0, 9.81], R_I_L=[1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0],
-            T_I_L=[0.0, 0.0, 0.0], voxel_size=0.5, time_field='', max_step_ms=0.0, publish_path=True)
+            T_I_L=[0.0, 0.0, 0.0], voxel_size=0.0, time_field='', max_step_ms=0.0, publish_path=True)
         for k, v in decl.items():
             self.declare_parameter(k, v)
         gp = lambda k: self.get_parameter(k).value

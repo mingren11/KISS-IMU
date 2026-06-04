@@ -1,0 +1,23 @@
+# CPU synthetic-demo compose file (no GPU, no dataset, no LiDAR C++ stack).
+#
+# For the full GPU pipeline on real datasets use docker/docker-compose.yml
+# instead (that one needs the prebuilt sparolab/kiss-imu:v1.0 image and an
+# NVIDIA runtime).
+#
+# Usage:
+#   docker compose -f docker/docker-compose.demo.yml up --build
+# Re-run with more epochs:
+#   docker compose -f docker/docker-compose.demo.yml run --rm -e EPOCH=20 demo
+services:
+  demo:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.demo
+    image: kiss-imu:demo-cpu
+    container_name: kiss-imu-demo
+    working_dir: /home/test_ws/src
+    # Bind-mount the repo so generated data and results show up on the host
+    # and source edits don't require a rebuild.
+    volumes:
+      - ..:/home/test_ws/src
+    command: ["bash", "docker/run_demo.sh"]

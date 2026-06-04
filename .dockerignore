@@ -1,0 +1,8 @@
+# The repo is bind-mounted into the container at runtime (see
+# docker/docker-compose.demo.yml), so the build only needs source code.
+# Keep generated data, results and VCS metadata out of the build context.
+.git
+data/
+results/
+**/__pycache__/
+*.pyc

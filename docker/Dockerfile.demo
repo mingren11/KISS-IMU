@@ -1,0 +1,36 @@
+# Self-contained CPU image for the KISS-IMU synthetic demo.
+#
+# Unlike docker/Dockerfile (which builds FROM the lab's prebuilt
+# sparolab/kiss-imu:v1.0 GPU image with the full LiDAR/CUDA stack), this image
+# builds from a plain python base and installs only what the synthetic
+# GT-supervision demo needs:
+#   - CPU PyTorch + torchvision + pypose
+#   - numpy/pandas/scipy/scikit-learn/matplotlib/tqdm/pyyaml/tensorboard/joblib
+# It deliberately omits the hard-to-build LiDAR C++ backends
+# (open3d/kiss-icp/small_gicp/pygicp/opencv) — they are only needed for the
+# full ICP/PGO pseudo-label path, which the demo skips via USE_GT=true.
+#
+# Build & run:  docker compose -f docker/docker-compose.demo.yml up --build
+FROM python:3.10-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    MPLBACKEND=Agg \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /home/test_ws/src
+
+# CPU-only torch/torchvision from the official CPU wheel index, then the rest
+# from PyPI. pypose, scikit-learn, scipy all ship manylinux wheels, so no
+# compiler toolchain is required.
+RUN pip install --index-url https://download.pytorch.org/whl/cpu \
+        torch torchvision \
+ && pip install \
+        numpy pandas scipy scikit-learn matplotlib tqdm pyyaml \
+        pypose tensorboard joblib
+
+# Code is bind-mounted at runtime (see docker-compose.demo.yml) so edits and
+# results are visible on the host. Copy it in as well so the image also works
+# standalone via `docker run`.
+COPY . /home/test_ws/src
+
+CMD ["bash", "docker/run_demo.sh"]

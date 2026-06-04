@@ -1,6 +1,6 @@
-# kiss_imu_ros — real-time ROS2 LiDAR-inertial odometry front-end (Phase 1)
+# kiss_imu_ros — real-time ROS2 LiDAR-inertial odometry front-end
 
-Streaming LIO front-end built on KISS-IMU. Phase 1: raw IMU + ICP + 2-node PVGO, publishes odom + TF. No loop closure, no global optimization (front-end only).
+Streaming LIO front-end built on KISS-IMU. Raw IMU + ICP + 2-node PVGO, publishes odom + TF. No loop closure, no global optimization (front-end only). Phase 2a adds per-point deskew, optional node-level voxel downsampling, and a frame-drop gate with latency monitoring.
 
 ## Dependencies
 - ROS2 (rclpy, sensor_msgs, nav_msgs, tf2_ros, sensor_msgs_py)
@@ -37,9 +37,14 @@ ros2 bag play your_dataset.db3 --remap /your_imu:=/imu /your_points:=/points
 ## Must-configure
 - `config/lio.yaml` `R_I_L` / `T_I_L` MUST be set from your real IMU->LiDAR calibration (defaults are identity).
 - On the real robot use `lo_model: kiss_icp`, `device: cuda:0`.
+- For deskew, set `time_field` to your LiDAR's per-point time field: Velodyne → `time`, Livox Mid-360 (PointCloud2 mode) → `timestamp` (empty disables deskew). **Mid-360 must publish `sensor_msgs/PointCloud2`, not `livox_ros_driver2/msg/CustomMsg`** — set the Livox driver `xfer_format` to PointCloud2 (or convert), otherwise the node receives nothing.
+
+## Real-time
+- The scan callback uses a non-blocking gate: if a `step()` is still running when a new scan arrives, the new scan is **dropped** (keeps latest, bounds latency). Set `max_step_ms` > 0 to log a warning + cumulative drop count when a step is slow.
+- `voxel_size` node-level downsampling defaults to OFF (`0.0`). The ICP backends voxelize internally; enabling node-level downsampling double-downsamples and can hurt accuracy. Only enable it to cap point count for transport/overlap cost; when enabled, per-point deskew times are downsampled with the same indices to stay aligned.
 
 ## QoS note
 Both subscriptions use `qos_profile_sensor_data` (BestEffort). If your IMU/LiDAR publisher uses RELIABLE QoS, ROS2 will silently fail to match and the node receives nothing — align the publisher QoS or adjust the subscription QoS accordingly.
 
-## Scope (Phase 1)
-Front-end odometry only. Deferred to later phases: learned IMU correction (LearnedCorrector), sliding-window PVGO, input voxel downsampling, high-rate IMU TF, and per-point LiDAR timestamps for kiss_icp motion compensation (currently `scan1_ts` is zero-filled, so kiss_icp deskew is effectively disabled — fine for small_gicp / non-spinning input). NaN/finite guard on the optimized anchor pose is implemented (divergent solves fall back to the IMU-integrated node).
+## Scope
+Front-end odometry only. Phase 2a (deskew, optional downsample, frame-drop/latency) is implemented. Still deferred to later phases: sliding-window PVGO, Odometry covariance, high-rate IMU TF, and learned IMU correction (LearnedCorrector). NaN/finite guard on the optimized anchor pose is implemented (divergent solves fall back to the IMU-integrated node).

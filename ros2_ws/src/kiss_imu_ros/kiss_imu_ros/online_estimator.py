@@ -38,6 +38,7 @@ class OdomResult:
     pose: np.ndarray       # (7,) xyz + quat xyzw
     vel: np.ndarray        # (3,)
     overlap: float
+    diverged: bool = False
 
 
 class OnlineEstimator:
@@ -126,12 +127,22 @@ class OnlineEstimator:
             weights=self.lm_weight, gravity=self.gravity,
             icp_weights=None, imu_weights=None, device=self.device)
 
-        self.anchor_pose = pgo_poses.tensor()[-1].detach().cpu()
-        self.anchor_vel = pgo_vels[-1].detach().cpu()
+        new_pose = pgo_poses.tensor()[-1].detach().cpu()
+        new_vel = pgo_vels[-1].detach().cpu()
+        diverged = not (torch.isfinite(new_pose).all() and torch.isfinite(new_vel).all())
+        if diverged:
+            # divergent solve -> keep going on the IMU-integrated node instead of
+            # poisoning every future step through the carried anchor
+            new_pose = imu_nodes.tensor()[-1].detach().cpu()
+            new_vel = imu_vels[-1].detach().cpu()
+
+        self.anchor_pose = new_pose
+        self.anchor_vel = new_vel
         self._prev_scan = scan_xyz
 
         return OdomResult(
             pose=self.anchor_pose.numpy().copy(),
             vel=self.anchor_vel.numpy().copy(),
             overlap=float(np.asarray(icp_overlap).reshape(-1)[-1]),
+            diverged=diverged,
         )

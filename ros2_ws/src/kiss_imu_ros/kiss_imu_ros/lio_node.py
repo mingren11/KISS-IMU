@@ -1,5 +1,4 @@
 """ROS2 node: subscribe IMU + PointCloud2, publish Odometry + TF."""
-import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup

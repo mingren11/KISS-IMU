@@ -71,7 +71,7 @@ class OnlineEstimator:
         self._prev_scan = None
 
     @torch.no_grad()
-    def step(self, scan_xyz, accels, gyros, imu_ts) -> OdomResult:
+    def step(self, scan_xyz, accels, gyros, imu_ts, scan1_ts=None) -> OdomResult:
         scan_xyz = np.asarray(scan_xyz, dtype=np.float64)
 
         if self._prev_scan is None or len(accels) < 2:
@@ -79,7 +79,8 @@ class OnlineEstimator:
             return OdomResult(pose=self.anchor_pose.numpy().copy(),
                               vel=self.anchor_vel.numpy().copy(), overlap=0.0)
 
-        sample = build_window_sample(accels, gyros, imu_ts, self._prev_scan, scan_xyz)
+        sample = build_window_sample(accels, gyros, imu_ts, self._prev_scan, scan_xyz,
+                                     scan1_ts=scan1_ts)
         corr = self.corrector.correct(sample)
         # move corrected IMU to the estimator device (IMUNet.forward did this; RawCorrector does not)
         dev = self.device

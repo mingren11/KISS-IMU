@@ -52,3 +52,12 @@ def test_raw_corrector_passthrough_gyros_and_dts():
     corr = RawCorrector().correct(s)
     assert torch.allclose(corr['gyros_corr'][0].cpu().double(), torch.from_numpy(gyros))
     assert len(corr['dts']) == 1 and corr['dts'][0].shape == (20,)
+
+
+def test_build_window_sample_threads_scan1_ts():
+    accels, gyros, imu_ts, scan0, scan1 = _fake_window()
+    t = np.linspace(0.0, 1.0, scan1.shape[0])
+    s = build_window_sample(accels, gyros, imu_ts, scan0, scan1, scan1_ts=t)
+    assert len(s['scan1_ts']) == 1
+    assert s['scan1_ts'][0].shape == (scan1.shape[0],)
+    assert torch.allclose(s['scan1_ts'][0].cpu().double(), torch.from_numpy(t))

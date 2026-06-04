@@ -1,5 +1,6 @@
 """ROS2 node: subscribe IMU + PointCloud2, publish Odometry + TF."""
 import rclpy
+import time
 from rclpy.node import Node
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -10,8 +11,9 @@ from geometry_msgs.msg import PoseStamped, TransformStamped
 from tf2_ros import TransformBroadcaster
 
 from .ring_buffer import ImuBuffer
-from .pointcloud2 import xyz_from_pointcloud2
+from .pointcloud2 import xyz_from_pointcloud2, voxel_downsample_indexed
 from .online_estimator import OnlineEstimator, EstimatorConfig
+from .frame_gate import FrameGate
 
 
 def _stamp_to_sec(stamp) -> float:
@@ -36,12 +38,16 @@ class LioNode(Node):
             odom_frame='odom', base_frame='base_link', lo_model='kiss_icp',
             use_submap=False, device='cuda:0', lm_weight=[1.0, 0.1, 1.0, 0.1, 0.1],
             gravity=[0.0, 0.0, 9.81], R_I_L=[1.0, 0, 0, 0, 1.0, 0, 0, 0, 1.0],
-            T_I_L=[0.0, 0.0, 0.0], voxel_size=0.5, publish_path=True)
+            T_I_L=[0.0, 0.0, 0.0], voxel_size=0.0, time_field='', max_step_ms=0.0, publish_path=True)
         for k, v in decl.items():
             self.declare_parameter(k, v)
         gp = lambda k: self.get_parameter(k).value
         self.odom_frame = gp('odom_frame'); self.base_frame = gp('base_frame')
         self.publish_path = gp('publish_path')
+        self._time_field = gp('time_field')
+        self._voxel_size = float(gp('voxel_size'))
+        self._max_step_ms = float(gp('max_step_ms'))
+        self._gate = FrameGate()
 
         self.buf = ImuBuffer()
         self.estimator = OnlineEstimator(params_to_cfg({k: gp(k) for k in
@@ -67,13 +73,28 @@ class LioNode(Node):
                         (msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z))
 
     def on_points(self, msg: PointCloud2):
-        t = _stamp_to_sec(msg.header.stamp)
-        t0 = self._last_scan_t if self._last_scan_t is not None else (t - 0.1)
-        ts, acc, gyro = self.buf.pop_window(t0, t)
-        self._last_scan_t = t
-        scan = xyz_from_pointcloud2(msg)
-        result = self.estimator.step(scan, acc, gyro, ts)
-        self._publish(result, msg.header.stamp)
+        if not self._gate.try_enter():
+            return                                  # drop backlogged scan, keep latest
+        try:
+            t = _stamp_to_sec(msg.header.stamp)
+            t0 = self._last_scan_t if self._last_scan_t is not None else (t - 0.1)
+            ts, acc, gyro = self.buf.pop_window(t0, t)
+            self._last_scan_t = t
+            scan, scan_t = xyz_from_pointcloud2(msg, time_field=self._time_field or None)
+            if self._voxel_size > 0:
+                scan, idx = voxel_downsample_indexed(scan, self._voxel_size)
+                if scan_t is not None:
+                    scan_t = scan_t[idx]            # keep per-point times aligned
+            t_start = time.monotonic()
+            result = self.estimator.step(scan, acc, gyro, ts, scan1_ts=scan_t)
+            dt_ms = (time.monotonic() - t_start) * 1e3
+            if self._max_step_ms > 0.0 and dt_ms > self._max_step_ms:
+                self.get_logger().warn(
+                    f'step took {dt_ms:.0f}ms (> {self._max_step_ms:.0f}ms); '
+                    f'dropped so far={self._gate.dropped}')
+            self._publish(result, msg.header.stamp)
+        finally:
+            self._gate.exit()
 
     def _publish(self, result, stamp):
         p, q = result.pose[:3], result.pose[3:]

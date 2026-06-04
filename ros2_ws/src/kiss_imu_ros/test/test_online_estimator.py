@@ -58,3 +58,13 @@ def test_divergent_solve_falls_back_to_finite_pose(monkeypatch):
     assert r.diverged is True
     assert np.all(np.isfinite(r.pose))         # fell back to IMU node, not NaN
     assert np.all(np.isfinite(est.anchor_pose.numpy()))
+
+
+def test_step_accepts_scan1_ts():
+    cfg = EstimatorConfig(lo_model='small_gicp', device='cpu')
+    est = OnlineEstimator(cfg)
+    est.step(_synth_scan(seed=0), *_synth_imu(t0=0.0))      # bootstrap
+    scan = _synth_scan(seed=1)
+    t = np.linspace(0.0, 1.0, scan.shape[0])
+    r = est.step(scan, *_synth_imu(t0=0.1), scan1_ts=t)     # per-point times accepted
+    assert r.pose.shape == (7,) and np.all(np.isfinite(r.pose))
